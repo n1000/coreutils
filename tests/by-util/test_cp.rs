@@ -2983,15 +2983,15 @@ fn test_same_file_force_backup() {
 }
 
 /// Test for copying the contents of a FIFO as opposed to the FIFO object itself.
-#[cfg(all(unix, not(target_os = "freebsd")))]
+#[cfg(all(unix, not(any(target_os = "freebsd", target_os = "openbsd"))))]
 #[test]
 fn test_copy_contents_fifo() {
-    // TODO this test should work on FreeBSD, but the command was
+    // TODO this test should work on FreeBSD and OpenBSD, but the command was
     // causing an error:
     //
     // cp: 'fifo' -> 'outfile': the source path is neither a regular file nor a symlink to a regular file
     //
-    // the underlying `std::fs:copy` doesn't support copying fifo on freeBSD
+    // the underlying `std::fs:copy` doesn't support copying fifo on freeBSD or OpenBSD
     let scenario = TestScenario::new(util_name!());
     let at = &scenario.fixtures;
 
