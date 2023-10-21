@@ -1401,7 +1401,7 @@ pub(crate) fn copy_attributes(
     })?;
 
     handle_preserve(&attributes.xattr, || -> CopyResult<()> {
-        #[cfg(unix)]
+        #[cfg(all(unix, not(target_os = "openbsd")))]
         {
             let xattrs = xattr::list(source)?;
             for attr in xattrs {
