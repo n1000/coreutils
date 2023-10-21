@@ -9,7 +9,7 @@ use regex::Regex;
 #[cfg(not(windows))]
 use std::io::Write;
 
-#[cfg(any(target_os = "linux", target_os = "android"))]
+#[cfg(any(target_os = "linux", target_os = "android", target_os = "openbsd"))]
 use crate::common::util::expected_result;
 use crate::common::util::TestScenario;
 
@@ -54,7 +54,7 @@ fn test_du_basics_subdir() {
 
     let result = ts.ucmd().arg(SUB_DIR).succeeds();
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "openbsd"))]
     {
         let result_reference = unwrap_or_return!(expected_result(&ts, &[SUB_DIR]));
         if result_reference.succeeded() {
@@ -135,7 +135,7 @@ fn test_du_soft_link() {
 
     let result = ts.ucmd().arg(SUB_DIR_LINKS).succeeds();
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "openbsd"))]
     {
         let result_reference = unwrap_or_return!(expected_result(&ts, &[SUB_DIR_LINKS]));
         if result_reference.succeeded() {
@@ -183,7 +183,7 @@ fn test_du_hard_link() {
 
     let result = ts.ucmd().arg(SUB_DIR_LINKS).succeeds();
 
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "openbsd"))]
     {
         let result_reference = unwrap_or_return!(expected_result(&ts, &[SUB_DIR_LINKS]));
         if result_reference.succeeded() {
@@ -227,7 +227,7 @@ fn test_du_d_flag() {
 
     let result = ts.ucmd().arg("-d1").succeeds();
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "openbsd"))]
     {
         let result_reference = unwrap_or_return!(expected_result(&ts, &["-d1"]));
         if result_reference.succeeded() {
@@ -273,7 +273,7 @@ fn test_du_dereference() {
 
     let result = ts.ucmd().arg("-L").arg(SUB_DIR_LINKS).succeeds();
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "openbsd"))]
     {
         let result_reference = unwrap_or_return!(expected_result(&ts, &["-L", SUB_DIR_LINKS]));
 
@@ -540,7 +540,7 @@ fn test_du_one_file_system() {
 
     let result = ts.ucmd().arg("-x").arg(SUB_DIR).succeeds();
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "openbsd"))]
     {
         let result_reference = unwrap_or_return!(expected_result(&ts, &["-x", SUB_DIR]));
         if result_reference.succeeded() {
@@ -555,7 +555,14 @@ fn test_du_one_file_system() {
 fn test_du_threshold() {
     let ts = TestScenario::new(util_name!());
 
-    let threshold = if cfg!(windows) { "7K" } else { "10K" };
+    let threshold = if cfg!(target_os = "windows") {
+        "7K"
+    } else if cfg!(target_os = "openbsd") {
+        // FIXME: this assumes a 2K fragment size.
+        "9K"
+    } else {
+        "10K"
+    };
 
     ts.ucmd()
         .arg(format!("--threshold={threshold}"))
@@ -860,5 +867,16 @@ fn test_du_symlink_multiple_fail() {
 
     let result = ts.ucmd().arg("-L").arg("target.txt").arg("file1").fails();
     assert_eq!(result.code(), 1);
+
+    #[cfg(target_os = "openbsd")]
+    {
+        let result_reference = unwrap_or_return!(expected_result(&ts, &["-L", "target.txt", "file1"]));
+
+        if !result_reference.succeeded() {
+            assert_eq!(result.stdout_str(), result_reference.stdout_str());
+            return;
+        }
+    }
+
     result.stdout_contains("4\tfile1\n");
 }
