@@ -665,7 +665,7 @@ fn test_nonexistent_file_not_owned_by_euid() {
 }
 
 #[test]
-#[cfg(all(not(windows), not(target_os = "freebsd")))]
+#[cfg(not(windows))]
 fn test_file_not_owned_by_euid() {
     new_ucmd!()
         .args(&["-f", "/bin/sh", "-a", "!", "-O", "/bin/sh"])
@@ -674,7 +674,7 @@ fn test_file_not_owned_by_euid() {
 
 // TODO: test on freebsd with this new code in place.
 #[test]
-#[cfg(all(not(windows), not(target_os = "freebsd")))]
+#[cfg(not(windows))]
 fn test_file_owned_by_egid() {
     let scene = TestScenario::new(util_name!());
     let at = &scene.fixtures;
@@ -719,7 +719,7 @@ fn test_nonexistent_file_not_owned_by_egid() {
 }
 
 #[test]
-#[cfg(all(not(windows), not(target_os = "freebsd")))]
+#[cfg(not(windows))]
 fn test_file_not_owned_by_egid() {
     new_ucmd!()
         .args(&["-f", "/bin/sh", "-a", "!", "-G", "/bin/sh"])
