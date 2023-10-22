@@ -15,8 +15,6 @@ use regex::Regex;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Read, Write};
 use std::path::PathBuf;
-#[cfg(all(unix, not(target_os = "macos"), not(target_os = "freebsd")))]
-use std::process::{Command, Stdio};
 #[cfg(not(windows))]
 use std::thread::sleep;
 #[cfg(not(windows))]
@@ -1471,29 +1469,19 @@ fn test_seek_output_fifo() {
     let at = &ts.fixtures;
     at.mkfifo("fifo");
 
-    // TODO When `dd` is a bit more advanced, we could use the uutils
-    // version of dd here as well.
-    let child = Command::new("dd")
-        .current_dir(&at.subdir)
-        .args([
-            "count=1",
-            "if=/dev/zero",
-            &format!("of={}", at.plus_as_string("fifo")),
-            "status=noxfer",
-        ])
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("failed to execute child process");
-
-    ts.ucmd()
+    let mut ucmd = ts.ucmd();
+    let child = ucmd
         .args(&["count=0", "seek=1", "of=fifo", "status=noxfer"])
-        .succeeds()
-        .stderr_only("0+0 records in\n0+0 records out\n");
+        .run_no_wait();
 
-    let output = child.wait_with_output().unwrap();
-    assert!(output.status.success());
-    assert!(output.stdout.is_empty());
-    assert_eq!(&output.stderr, b"1+0 records in\n1+0 records out\n");
+    std::fs::write(at.plus("fifo"), &vec![0; 512]).unwrap();
+
+    child
+        .wait()
+        .unwrap()
+        .success()
+        .no_stdout()
+        .stderr_is("0+0 records in\n0+0 records out\n");
 }
 
 /// Test that a skip on an input FIFO results in a read.
@@ -1504,29 +1492,19 @@ fn test_skip_input_fifo() {
     let at = &ts.fixtures;
     at.mkfifo("fifo");
 
-    // TODO When `dd` is a bit more advanced, we could use the uutils
-    // version of dd here as well.
-    let child = Command::new("dd")
-        .current_dir(&at.subdir)
-        .args([
-            "count=1",
-            "if=/dev/zero",
-            &format!("of={}", at.plus_as_string("fifo")),
-            "status=noxfer",
-        ])
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("failed to execute child process");
-
-    ts.ucmd()
+    let mut ucmd = ts.ucmd();
+    let child = ucmd
         .args(&["count=0", "skip=1", "if=fifo", "status=noxfer"])
-        .succeeds()
-        .stderr_only("0+0 records in\n0+0 records out\n");
+        .run_no_wait();
 
-    let output = child.wait_with_output().unwrap();
-    assert!(output.status.success());
-    assert!(output.stdout.is_empty());
-    assert_eq!(&output.stderr, b"1+0 records in\n1+0 records out\n");
+    std::fs::write(at.plus("fifo"), &vec![0; 512]).unwrap();
+
+    child
+        .wait()
+        .unwrap()
+        .success()
+        .no_stdout()
+        .stderr_is("0+0 records in\n0+0 records out\n");
 }
 
 /// Test for reading part of stdin from each of two child processes.
