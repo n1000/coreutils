@@ -2343,7 +2343,12 @@ fn test_no_preserve_mode() {
 
     use uucore::mode::get_umask;
 
-    const PERMS_ALL: u32 = 0o7777;
+    const PERMS_ALL: u32 = if cfg!(target_os = "openbsd") {
+        // Only the superuser can set the sticky bit on a file.
+        0o6777
+    } else {
+        0o7777
+    };
 
     let (at, mut ucmd) = at_and_ucmd!();
     at.touch("file");
@@ -2367,7 +2372,12 @@ fn test_no_preserve_mode() {
 fn test_preserve_mode() {
     use std::os::unix::prelude::MetadataExt;
 
-    const PERMS_ALL: u32 = 0o7777;
+    const PERMS_ALL: u32 = if cfg!(target_os = "openbsd") {
+        // Only the superuser can set the sticky bit on a file.
+        0o6777
+    } else {
+        0o7777
+    };
 
     let (at, mut ucmd) = at_and_ucmd!();
     at.touch("file");
