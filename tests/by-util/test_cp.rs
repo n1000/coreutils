@@ -13,7 +13,7 @@ use std::os::unix::fs;
 
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
-#[cfg(all(unix, not(target_os = "freebsd")))]
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 #[cfg(windows)]
 use std::os::windows::fs::symlink_file;
@@ -2337,13 +2337,13 @@ fn test_copy_symlink_force() {
 }
 
 #[test]
-#[cfg(all(unix, not(target_os = "freebsd")))]
+#[cfg(unix)]
 fn test_no_preserve_mode() {
     use std::os::unix::prelude::MetadataExt;
 
     use uucore::mode::get_umask;
 
-    const PERMS_ALL: u32 = if cfg!(target_os = "openbsd") {
+    const PERMS_ALL: u32 = if cfg!(any(target_os = "freebsd", target_os = "openbsd")) {
         // Only the superuser can set the sticky bit on a file.
         0o6777
     } else {
@@ -2368,11 +2368,11 @@ fn test_no_preserve_mode() {
 }
 
 #[test]
-#[cfg(all(unix, not(target_os = "freebsd")))]
+#[cfg(unix)]
 fn test_preserve_mode() {
     use std::os::unix::prelude::MetadataExt;
 
-    const PERMS_ALL: u32 = if cfg!(target_os = "openbsd") {
+    const PERMS_ALL: u32 = if cfg!(any(target_os = "freebsd", target_os = "openbsd")) {
         // Only the superuser can set the sticky bit on a file.
         0o6777
     } else {
