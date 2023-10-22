@@ -838,7 +838,7 @@ fn test_touch_no_dereference_dangling() {
     ucmd.args(&["-h", "dangling"]).succeeds();
 }
 
-#[cfg(not(target_os = "openbsd"))]
+#[cfg(not(any(target_os = "freebsd", target_os = "openbsd")))]
 #[test]
 fn test_touch_dash() {
     let (_, mut ucmd) = at_and_ucmd!();
