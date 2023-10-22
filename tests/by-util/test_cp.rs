@@ -3208,6 +3208,13 @@ fn test_cp_debug_default() {
     {
         panic!("Failure: stdout was \n{stdout_str}");
     }
+
+    #[cfg(target_os = "openbsd")]
+    if !stdout_str
+        .contains("copy offload: unsupported, reflink: unsupported, sparse detection: unsupported")
+    {
+        panic!("Failure: stdout was \n{stdout_str}");
+    }
 }
 
 #[test]
@@ -3265,7 +3272,7 @@ fn test_cp_debug_multiple_default() {
         );
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "openbsd"))]
     {
         if !stdout_str.contains(
             "copy offload: unsupported, reflink: unsupported, sparse detection: unsupported",
