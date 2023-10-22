@@ -664,10 +664,41 @@ fn test_file_not_owned_by_euid() {
         .succeeds();
 }
 
+// TODO: test on freebsd with this new code in place.
 #[test]
 #[cfg(all(not(windows), not(target_os = "freebsd")))]
 fn test_file_owned_by_egid() {
-    new_ucmd!().args(&["-G", "regular_file"]).succeeds();
+    let scene = TestScenario::new(util_name!());
+    let at = &scene.fixtures;
+
+    // Depending on the configuration of the /tmp directory and the groups that
+    // the user is in, it might be possible that the text fixtures copied to the
+    // /tmp directory have a different gid than the current egid. Fix this
+    // before running the test command.
+    let getegid = || {
+        #[cfg(not(target_os = "redox"))]
+        let egid = unsafe { libc::getegid() };
+        #[cfg(target_os = "redox")]
+        let egid = syscall::getegid().unwrap() as u32;
+
+        egid
+    };
+
+    use std::os::unix::fs::MetadataExt;
+    use std::ffi::CString;
+
+    let metadata = at.metadata("regular_file");
+    let file_gid = metadata.gid();
+    let user_gid = getegid();
+
+    if user_gid != file_gid {
+        let file_uid = metadata.uid();
+        let cpath = CString::new(at.plus("regular_file").as_os_str().to_str().unwrap()).expect("bad path");
+        let r = unsafe { libc::chown(cpath.as_ptr().into(), file_uid, user_gid) };
+        assert_ne!(r, -1);
+    }
+
+    scene.ucmd().args(&["-G", "regular_file"]).succeeds();
 }
 
 #[test]
